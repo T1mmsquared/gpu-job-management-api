@@ -1,6 +1,12 @@
 # gpu-job-management-api
 
-Production-style FastAPI backend for managing asynchronous GPU compute jobs. Includes authentication, background workers, PostgreSQL, Docker, and cloud-ready deployment.
+
+
+Production-style backend system for submitting and managing asynchronous GPU compute jobs.
+
+
+
+Built with FastAPI, Celery, PostgreSQL, Redis, and Docker.
 
 
 
@@ -62,45 +68,45 @@ Client → FastAPI → Redis Queue → Celery Worker → PostgreSQL
 
 
 
-&nbsp;           ┌────────────┐
+            ┌────────────┐
 
-&nbsp;           │   Client  	 │
+            │   Client  	 │
 
-&nbsp;           └─────┬──────┘
+            └─────┬──────┘
 
-&nbsp;                 │
+                  │
 
-&nbsp;           ┌─────▼──────┐
+            ┌─────▼──────┐
 
-&nbsp;           │  FastAPI  	 │
+            │  FastAPI  	 │
 
-&nbsp;           └─────┬──────┘
+            └─────┬──────┘
 
-&nbsp;                 │
+                  │
 
-&nbsp;           ┌─────▼──────┐
+            ┌─────▼──────┐
 
-&nbsp;           │   Redis   	 │
+            │   Redis   	 │
 
-&nbsp;           └─────┬──────┘
+            └─────┬──────┘
 
-&nbsp;                 │
+                  │
 
-&nbsp;           ┌─────▼──────┐
+            ┌─────▼──────┐
 
-&nbsp;           │  Celery   	 │
+            │  Celery   	 │
 
-&nbsp;           │  Worker   	 │
+            │  Worker   	 │
 
-&nbsp;           └─────┬──────┘
+            └─────┬──────┘
 
-&nbsp;                 │
+                  │
 
-&nbsp;           ┌─────▼──────┐
+            ┌─────▼──────┐
 
-&nbsp;           │ PostgreSQL	 │
+            │ PostgreSQL	 │
 
-&nbsp;           └────────────┘
+            └────────────┘
 
 
 
