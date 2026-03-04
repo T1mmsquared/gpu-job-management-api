@@ -1,0 +1,23 @@
+# Secrets / local env
+.env
+.env.*.local
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.envrc
+
+# Test / coverage
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Tools / IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db

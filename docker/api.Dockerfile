@@ -1,0 +1,3 @@
+ports: ["8000:8000"]
+env_file: .env
+depends_on: [db, redis]
