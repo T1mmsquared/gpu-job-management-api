@@ -12,3 +12,5 @@ def validate_password_complexity(pw: str) -> None:
         raise ValueError("Password must contain a number")
     if not re.search(r"[^A-Za-z0-9]", pw):
         raise ValueError("Password must contain a symbol")
+    if len(pw.encode("utf-8")) > 72:
+        raise ValueError("Password must be 72 bytes or less")
