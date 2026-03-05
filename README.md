@@ -34,27 +34,81 @@ Project structure
 
 
 
-gpu-job-management-api/
+├── alembic
 
-|
+│   ├── env.py
 
-|-- app/ FastAPI application code
+│   ├── \_\_pycache\_\_
 
-|-- worker/ Celery worker code
+│   │   └── env.cpython-312.pyc
 
-|-- docker/ Docker build files
+│   ├── README
 
-|-- alembic/ Database migration scripts
+│   ├── script.py.mako
 
-|-- docker-compose.yml Multi-service local environment
+│   └── versions
 
-|-- requirements.txt Python dependencies
+│       └── 90f9e28103f8\_initial\_schema.py
 
-|-- .env Local environment configuration
+├── alembic.ini
 
-`-- README.md
+├── app
 
+│   ├── core
 
+│   │   ├── config.py
+
+│   │   ├── db.py
+
+│   │   ├── deps.py
+
+│   │   ├── \_\_pycache\_\_
+
+│   │   └── security.py
+
+│   ├── main.py
+
+│   ├── models
+
+│   │   ├── \_\_init\_\_.py
+
+│   │   ├── job.py
+
+│   │   └── user.py
+
+│   ├── routes
+
+│   │   └── auth.py
+
+│   ├── schemas
+
+│   │   ├── auth.py
+
+│   │   └── job.py
+
+│   └── services
+
+│       ├── jobs.py
+
+│       └── password\_policy.py
+
+├── docker
+
+│   ├── api.Dockerfile
+
+│   └── worker.Dockerfile
+
+├── docker-compose.yml
+
+├── README.md
+
+├── requirements.txt
+
+└── worker
+
+&nbsp;   ├── celery\_app.py
+
+&nbsp;   └── tasks.py
 
 
 
