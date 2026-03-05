@@ -6,6 +6,7 @@ from sqlalchemy.orm import Session
 from app.core.db import get_db, Base, engine
 from app.schemas.job import JobSubmit, JobResponse
 from app.services.jobs import create_job, get_job
+from app.routes.auth import router as auth_router
 from worker.tasks import run_job  # shared task definition
 
 app = FastAPI(title="gpu-job-management-api")
