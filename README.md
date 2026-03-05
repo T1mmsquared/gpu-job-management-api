@@ -1,78 +1,50 @@
-\# gpu-job-management-api
-
-
+gpu-job-management-api
 
 Production-style backend system for submitting and managing asynchronous GPU compute jobs.
 
 
 
-Built with FastAPI, Celery, PostgreSQL, Redis, Docker, SQLAlchemy, and Alembic. \[file:295]
+Built with FastAPI, Celery, PostgreSQL, Redis, Docker, SQLAlchemy, and Alembic.
 
 
 
-\## Overview
+Overview
+
+This project is structured like a real-world backend system used for asynchronous compute workloads.
 
 
 
-This project is structured like a real-world backend system used for asynchronous compute workloads. \[file:295]
+It exposes an API for job submission, pushes work to a Redis-backed queue, processes jobs in a separate Celery worker, and stores application data in PostgreSQL.
 
 
 
-It exposes an API for job submission, pushes work to a Redis-backed queue, processes jobs in a separate Celery worker, and stores application data in PostgreSQL. \[file:295]
-
-
-
-\## Architecture
-
-
+Project Structure
 
 gpu-job-management-api/
 
-│
+|
 
-├── app/                  # FastAPI service
+|-- app/ FastAPI service
 
-│   ├── main.py
+| |-- main.py
 
-│   ├── core/
+| |-- core/
 
-│   ├── models/
+| |-- models/
 
-│   ├── schemas/
+| |-- schemas/
 
-│   ├── routes/
+| |-- routes/
 
-│   └── services/
+| -- services/ | |-- worker/ Celery worker service | |-- celery\_app.py | -- tasks.py
 
-│
+|
 
-├── worker/               # Celery worker service
+|-- docker/
 
-│   ├── celery\_app.py
+| |-- api.Dockerfile
 
-│   └── tasks.py
-
-│
-
-├── docker/
-
-│   ├── api.Dockerfile
-
-│   └── worker.Dockerfile
-
-│
-
-├── alembic/              # Database migration scripts
-
-├── docker-compose.yml
-
-├── requirements.txt
-
-├── .env
-
-├── .env.example
-
-└── README.md
+| -- worker.Dockerfile | |-- alembic/ Database migration scripts |-- docker-compose.yml |-- requirements.txt |-- .env |-- .env.example -- README.md
 
 
 
@@ -84,55 +56,75 @@ Client -> FastAPI -> Redis Queue -> Celery Worker -> PostgreSQL
 
 
 
-\## Tech Stack
+Tech Stack
+
+FastAPI
 
 
 
-\- FastAPI
-
-\- Celery
-
-\- Redis
-
-\- PostgreSQL
-
-\- SQLAlchemy
-
-\- Alembic
-
-\- Docker / Docker Compose
-
-\- Pydantic Settings
+Celery
 
 
 
-\## Why this design
+Redis
 
 
 
-\### Celery instead of FastAPI BackgroundTasks
+PostgreSQL
 
 
 
-FastAPI BackgroundTasks run in the API process.
+SQLAlchemy
 
 
 
-Celery is a better fit for production-style async processing because it supports:
-
-\- Worker isolation
-
-\- Retries
-
-\- Failure handling
-
-\- Horizontal scaling
-
-\- Clear separation between API and job execution
+Alembic
 
 
 
-\### Redis as broker
+Docker / Docker Compose
+
+
+
+Pydantic Settings
+
+
+
+Why This Design
+
+Celery instead of FastAPI BackgroundTasks
+
+
+
+FastAPI BackgroundTasks run inside the API process.
+
+
+
+Celery is better for production-style asynchronous processing because it supports:
+
+
+
+Worker isolation
+
+
+
+Retries
+
+
+
+Failure handling
+
+
+
+Horizontal scaling
+
+
+
+Separation between API and job execution
+
+
+
+Redis as broker
 
 
 
@@ -140,7 +132,7 @@ Redis is lightweight, fast, and commonly used with Celery for task queuing.
 
 
 
-\### PostgreSQL instead of SQLite
+PostgreSQL instead of SQLite
 
 
 
@@ -150,37 +142,51 @@ PostgreSQL is a better fit for concurrent workloads and production-style deploym
 
 Benefits include:
 
-\- Better concurrency support
 
-\- Transaction safety
 
-\- Reliability under load
-
-\- Real deployment parity
+Better concurrency support
 
 
 
-\### Separate worker container
+Transaction safety
+
+
+
+Reliability under load
+
+
+
+Real deployment parity
+
+
+
+Separate worker container
 
 
 
 Keeping the worker separate from the API:
 
-\- Mirrors real distributed systems
 
-\- Allows independent scaling
 
-\- Improves fault isolation
-
-\- Keeps web and job execution responsibilities separate
+Mirrors real distributed systems
 
 
 
-\## Environment variables
+Allows independent scaling
 
 
 
-Create a `.env` file in the project root.
+Improves fault isolation
+
+
+
+Keeps web and job execution responsibilities separate
+
+
+
+Environment Variables
+
+Create a .env file in the project root.
 
 
 
@@ -208,29 +214,31 @@ JWT\_EXPIRES\_MINUTES=60
 
 
 
-\## Docker services
-
-
+Docker Services
 
 The project uses these services:
 
 
 
-\- `db` - PostgreSQL 16
-
-\- `redis` - Redis 7 Alpine
-
-\- `api` - FastAPI application
-
-\- `worker` - Celery worker
+db PostgreSQL 16
 
 
 
-\## Dockerfiles
+redis Redis 7 Alpine
 
 
 
-The API Dockerfile uses `/app` as the working directory and installs Python dependencies from `requirements.txt`, then copies in the application code.
+api FastAPI application
+
+
+
+worker Celery worker
+
+
+
+Dockerfiles
+
+The API Dockerfile uses /app as the working directory and installs Python dependencies from requirements.txt, then copies in the application code.
 
 
 
@@ -238,41 +246,41 @@ That means files created at runtime inside the container only persist to your ho
 
 
 
-\## Initial setup
-
-
+Initial Setup
 
 From the project root:
 
 
 
-```bash
-
 docker compose up -d --build
+
+
 
 To stop the stack:
 
 
 
-bash
-
 docker compose down
+
+
 
 To stop and remove volumes:
 
 
 
-bash
-
 docker compose down -v
 
-Alembic setup
 
-Alembic was initialized for database migrations.
+
+Alembic Setup
+
+Alembic is used for database migrations.
 
 
 
 Important note:
+
+
 
 If you run Alembic inside Docker without mounting the repo, generated files may be created only inside the container and not appear on the host filesystem.
 
@@ -282,23 +290,23 @@ Recommended command pattern for Alembic operations:
 
 
 
-bash
+docker compose run --rm
 
-docker compose run --rm \\
+--user "$(id -u):$(id -g)"
 
-&nbsp; --user "$(id -u):$(id -g)" \\
+-v "$(pwd):/app"
 
-&nbsp; -v "$(pwd):/app" \\
+-w /app
 
-&nbsp; -w /app \\
+api alembic <command>
 
-&nbsp; api alembic <command>
+
 
 Using --user "$(id -u):$(id -g)" helps avoid root-owned files on the host.
 
 
 
-Using -v "$(pwd):/app" ensures alembic.ini and migration files are read from and written to the project directory on the host.
+Using -v "$(pwd):/app" ensures alembic.ini and migration files are read from and written to the host project directory.
 
 
 
@@ -306,83 +314,93 @@ Using -w /app ensures Alembic runs from the directory containing alembic.ini.
 
 
 
-Alembic workflow
+Alembic Workflow
 
-Check current revision
+Check current revision:
 
-bash
 
-docker compose run --rm \\
 
-&nbsp; --user "$(id -u):$(id -g)" \\
+docker compose run --rm
 
-&nbsp; -v "$(pwd):/app" \\
+--user "$(id -u):$(id -g)"
 
-&nbsp; -w /app \\
+-v "$(pwd):/app"
 
-&nbsp; api alembic current
+-w /app
 
-Show migration heads
+api alembic current
 
-bash
 
-docker compose run --rm \\
 
-&nbsp; --user "$(id -u):$(id -g)" \\
+Show migration heads:
 
-&nbsp; -v "$(pwd):/app" \\
 
-&nbsp; -w /app \\
 
-&nbsp; api alembic heads
+docker compose run --rm
 
-Upgrade database
+--user "$(id -u):$(id -g)"
 
-bash
+-v "$(pwd):/app"
 
-docker compose run --rm \\
+-w /app
 
-&nbsp; --user "$(id -u):$(id -g)" \\
+api alembic heads
 
-&nbsp; -v "$(pwd):/app" \\
 
-&nbsp; -w /app \\
 
-&nbsp; api alembic upgrade head
+Upgrade database:
 
-Create a new migration
+
+
+docker compose run --rm
+
+--user "$(id -u):$(id -g)"
+
+-v "$(pwd):/app"
+
+-w /app
+
+api alembic upgrade head
+
+
+
+Create a new migration:
+
+
 
 Only do this after making actual SQLAlchemy model changes and after ensuring the database is already at head.
 
 
 
-bash
+docker compose run --rm
 
-docker compose run --rm \\
+--user "$(id -u):$(id -g)"
 
-&nbsp; --user "$(id -u):$(id -g)" \\
+-v "$(pwd):/app"
 
-&nbsp; -v "$(pwd):/app" \\
+-w /app
 
-&nbsp; -w /app \\
+api alembic revision --autogenerate -m "describe change"
 
-&nbsp; api alembic revision --autogenerate -m "describe change"
 
-Important Alembic notes
+
+Important Alembic Notes
 
 Do not run host alembic
+
+
 
 Do not run plain host commands like:
 
 
 
-bash
-
 alembic current
 
 alembic heads
 
-Those may use your host Python installation instead of the container environment and fail with missing dependency errors such as ModuleNotFoundError: No module named 'pydantic\_settings'.
+
+
+Those may use your host Python installation instead of the container environment and fail with missing dependency errors.
 
 
 
@@ -391,6 +409,8 @@ Use the Docker-based Alembic commands instead.
 
 
 Avoid placeholder migrations
+
+
 
 Do not create placeholder migrations with messages like:
 
@@ -414,6 +434,8 @@ If you create and apply a migration, then delete the file later, Alembic history
 
 If Alembic says "Target database is not up to date"
 
+
+
 That means your database revision is behind the migration head.
 
 
@@ -422,35 +444,39 @@ Fix it by running:
 
 
 
-bash
+docker compose run --rm
 
-docker compose run --rm \\
+--user "$(id -u):$(id -g)"
 
-&nbsp; --user "$(id -u):$(id -g)" \\
+-v "$(pwd):/app"
 
-&nbsp; -v "$(pwd):/app" \\
+-w /app
 
-&nbsp; -w /app \\
+api alembic upgrade head
 
-&nbsp; api alembic upgrade head
+
 
 Then rerun your revision --autogenerate command if needed.
 
 
 
-Common issues
+Common Issues
 
 Files created by Docker are owned by root
 
-If MobaXterm or your editor says Permission denied when saving a file, fix ownership with:
 
 
+If MobaXterm or your editor says "Permission denied" when saving a file, fix ownership with:
 
-bash
+
 
 sudo chown -R $(id -u):$(id -g) alembic alembic.ini
 
+
+
 Alembic cannot find alembic.ini
+
+
 
 Use:
 
@@ -468,11 +494,13 @@ or explicitly specify the config:
 
 
 
-bash
-
 api alembic -c /app/alembic.ini current
 
+
+
 Compose says service depends on undefined service
+
+
 
 If docker compose config fails with errors like:
 
@@ -486,7 +514,7 @@ depends on undefined service "redis"
 
 
 
-the compose file may have been malformed or saved incorrectly.
+the compose file may be malformed or saved incorrectly.
 
 
 
@@ -494,35 +522,35 @@ Validate with:
 
 
 
-bash
-
 docker compose -f ./docker-compose.yml config
 
-Development reset
+
+
+Development Reset
 
 If Alembic history becomes inconsistent during development and you do not need to preserve local DB data:
 
 
 
-bash
-
 docker compose down -v
 
-rm -rf alembic/versions/\_\_pycache\_\_
+rm -rf alembic/versions/pycache
 
 docker compose up -d db redis
 
-docker compose run --rm \\
+docker compose run --rm
 
-&nbsp; --user "$(id -u):$(id -g)" \\
+--user "$(id -u):$(id -g)"
 
-&nbsp; -v "$(pwd):/app" \\
+-v "$(pwd):/app"
 
-&nbsp; -w /app \\
+-w /app
 
-&nbsp; api alembic upgrade head
+api alembic upgrade head
 
-Future improvements
+
+
+Future Improvements
 
 Job priority queues
 
@@ -548,7 +576,7 @@ CI/CD pipeline
 
 
 
-Authentication/authorization hardening
+Authentication and authorization hardening
 
 
 
@@ -560,9 +588,9 @@ GPU resource scheduling
 
 
 
-Purpose of the project
+Purpose of the Project
 
-This project is intentionally structured to reflect a real-world backend system used in cloud compute platforms. \[file:295]
+This project is intentionally structured to reflect a real-world backend system used in cloud compute platforms.
 
 
 
