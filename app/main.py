@@ -1,12 +1,13 @@
-import uuid
-from app.models.user import User  # ensures User model is registered
-from typing import Optional
-from fastapi import Query
-from fastapi import FastAPI, Depends, HTTPException
+from fastapi import FastAPI, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
+import uuid
+from typing import Optional
+
 
 from app.core.db import get_db, Base, engine
 from app.core.deps import get_current_user
+from app.models.user import User  # ensures User model is registered
+
 from app.schemas.job import JobSubmit, JobResponse
 from app.services.jobs import create_job, get_job, list_jobs, delete_job
 from app.routes.auth import router as auth_router
@@ -24,29 +25,31 @@ def health():
     return {"status": "ok"}
 
 @app.post("/jobs", response_model=JobResponse)
-def submit_job(req: JobSubmit, db: Session = Depends(get_db)):
+def submit_job(
+    req: JobSubmit,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
     job = create_job(db, current_user.id, req.job_type, req.payload)
     run_job.delay(str(job.id))
     return JobResponse(id=str(job.id), status=job.status, job_type=job.job_type)
 
 @app.get("/jobs/{job_id}", response_model=JobResponse)
-def job_status(job_id: str, db: Session = Depends(get_db)):
+def job_status(
+    job_id: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
     try:
         jid = uuid.UUID(job_id)
     except ValueError:
         raise HTTPException(status_code=400, detail="Invalid job_id")
 
     job = get_job(db, jid)
-    if job.user_id != current_user.id:
+    if not job or job.user_id != current_user.id:
         raise HTTPException(status_code=404, detail="Job not found")
 
-    if not job:
-        raise HTTPException(status_code=404, detail="Job not found")
-
-    result = None
-    if job.artifacts and job.artifacts.output is not None:
-        result = job.artifacts.output
-
+    result = job.artifacts.output if job.artifacts and job.artifacts.output is not None else None
     return JobResponse(
         id=str(job.id),
         status=job.status,
@@ -64,20 +67,37 @@ def list_my_jobs(
     status: Optional[str] = Query(None),
 ):
     jobs = list_jobs(db, current_user.id, limit=limit, offset=offset, status=status)
-
-    out: list[JobResponse] = []
-    for job in jobs:
-        result = job.artifacts.output if job.artifacts and job.artifacts.output is not None else None
-        out.append(
-            JobResponse(
-                id=str(job.id),
-                status=job.status,
-                job_type=job.job_type,
-                result=result,
-                error=job.error,
-            )
+    return [
+        JobResponse(
+            id=str(j.id),
+            status=j.status,
+            job_type=j.job_type,
+            result=(j.artifacts.output if j.artifacts and j.artifacts.output is not None else None),
+            error=j.error,
         )
-    return out
+        for j in jobs
+    ]
+
+@app.delete("/jobs/{job_id}", status_code=204)
+def delete_my_job(
+    job_id: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    try:
+        jid = uuid.UUID(job_id)
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid job_id")
+
+    job = get_job(db, jid)
+    if not job or job.user_id != current_user.id:
+        raise HTTPException(status_code=404, detail="Job not found")
+
+    if job.status == "running":
+        raise HTTPException(status_code=409, detail="Cannot delete a running job")
+
+    delete_job(db, job)
+    return
 
 
 # Sprint shortcut: create tables automatically.
