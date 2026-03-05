@@ -9,6 +9,7 @@ from app.core.db import Base
 class Job(Base):
     __tablename__ = "jobs"
 
+    user_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True),ForeignKey("users.id", ondelete="CASCADE"),index=True,)
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     status: Mapped[str] = mapped_column(String(32), index=True)  # queued|running|succeeded|failed
     job_type: Mapped[str] = mapped_column(String(64), index=True)
