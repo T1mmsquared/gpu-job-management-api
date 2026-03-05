@@ -12,6 +12,10 @@ from worker.tasks import run_job  # shared task definition
 app = FastAPI(title="gpu-job-management-api")
 app.include_router(auth_router)
 
+@app.on_event("startup")
+def _create_tables():
+    Base.metadata.create_all(bind=engine)
+
 @app.get("/health")
 def health():
     return {"status": "ok"}
