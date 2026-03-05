@@ -1,4 +1,5 @@
 import uuid
+import app.models.user  # ensures User model is registered
 from fastapi import FastAPI, Depends, HTTPException
 from sqlalchemy.orm import Session
 
@@ -8,6 +9,7 @@ from app.services.jobs import create_job, get_job
 from worker.tasks import run_job  # shared task definition
 
 app = FastAPI(title="gpu-job-management-api")
+app.include_router(auth_router)
 
 @app.get("/health")
 def health():
