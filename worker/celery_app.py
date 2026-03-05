@@ -7,3 +7,5 @@ celery_app = Celery(
     backend=settings.CELERY_RESULT_BACKEND,
 )
 celery_app.conf.task_track_started = True
+
+import worker.tasks
