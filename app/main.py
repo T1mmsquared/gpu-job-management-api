@@ -1,12 +1,14 @@
 from fastapi import FastAPI, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 import uuid
+import app.models.user
+import app.models.job
 from typing import Optional
 
 
 from app.core.db import get_db, Base, engine
 from app.core.deps import get_current_user
-from app.models.user import User  # ensures User model is registered
+from app.models.user import User
 
 from app.schemas.job import JobSubmit, JobResponse
 from app.services.jobs import create_job, get_job, list_jobs, delete_job
@@ -102,6 +104,4 @@ def delete_my_job(
 
 # Sprint shortcut: create tables automatically.
 # Later we’ll replace this with Alembic migrations.
-@app.on_event("startup")
-def _create_tables():
-    Base.metadata.create_all(bind=engine)
+
