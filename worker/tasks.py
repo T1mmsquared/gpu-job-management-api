@@ -1,5 +1,6 @@
 import uuid
 import time
+import app.models  # noqa: F401
 from datetime import datetime
 
 from sqlalchemy.orm import Session
@@ -50,6 +51,7 @@ def run_job(job_id: str):
         db.commit()
 
     except Exception as e:
+	db.rollback()
         try:
             job = db.get(Job, uuid.UUID(job_id))
             if job:
