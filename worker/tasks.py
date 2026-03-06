@@ -1,16 +1,22 @@
-import uuid
 import time
-import app.models  # noqa: F401
-from datetime import datetime
+import uuid
+from datetime import datetime, timezone
 
+import app.models  # noqa: F401
 from sqlalchemy.orm import Session
 
-from worker.celery_app import celery_app
 from app.core.db import SessionLocal
-from app.models.job import Job
+from app.models.job import Job, JobStatus
+from worker.celery_app import celery_app
+
 
 def _db() -> Session:
     return SessionLocal()
+
+
+def utc_now() -> datetime:
+    return datetime.now(timezone.utc)
+
 
 @celery_app.task(name="run_job")
 def run_job(job_id: str):
@@ -21,13 +27,16 @@ def run_job(job_id: str):
         if not job:
             return
 
-        job.status = "running"
-        job.started_at = datetime.utcnow()
-        job.updated_at = datetime.utcnow()
+        if not job.artifacts:
+            raise ValueError("Job artifacts record is missing")
+
+        job.status = JobStatus.RUNNING.value
+        job.started_at = utc_now()
+        job.updated_at = utc_now()
         db.commit()
         db.refresh(job)
 
-        payload = job.artifacts.input if job.artifacts else {}
+        payload = job.artifacts.input or {}
 
         if job.job_type == "test_sleep":
             seconds = int(payload.get("seconds", 5))
@@ -39,29 +48,35 @@ def run_job(job_id: str):
             required = payload.get("required_value")
             if required is None:
                 raise ValueError("payload.required_value is required")
-            job.artifacts.output = {"valid": True, "required_value": required}
+            job.artifacts.output = {
+                "valid": True,
+                "required_value": required,
+            }
 
         else:
             raise ValueError(f"Unsupported job_type: {job.job_type}")
 
-        job.status = "succeeded"
-        job.finished_at = datetime.utcnow()
-        job.updated_at = datetime.utcnow()
+        job.status = JobStatus.SUCCEEDED.value
+        job.finished_at = utc_now()
+        job.updated_at = utc_now()
         job.error = None
         db.commit()
 
     except Exception as e:
         db.rollback()
         try:
-            job = db.get(Job, uuid.UUID(job_id))
+            jid = uuid.UUID(job_id)
+            job = db.get(Job, jid)
             if job:
-                job.status = "failed"
-                job.finished_at = datetime.utcnow()
-                job.updated_at = datetime.utcnow()
+                job.status = JobStatus.FAILED.value
+                job.finished_at = utc_now()
+                job.updated_at = utc_now()
                 job.error = str(e)
                 db.commit()
         finally:
-            pass
+            db.close()
         raise
+
     finally:
-        db.close()
+        if db.is_active:
+            db.close()

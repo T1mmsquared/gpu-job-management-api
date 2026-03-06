@@ -6,6 +6,11 @@ celery_app = Celery(
     broker=settings.CELERY_BROKER_URL,
     backend=settings.CELERY_RESULT_BACKEND,
 )
-celery_app.conf.task_track_started = True
+
+
+celery_app.conf.update(
+    celery_app.conf.task_track_started = True
+    broker_connection_retry_on_startup=True,
+)
 
 import worker.tasks
