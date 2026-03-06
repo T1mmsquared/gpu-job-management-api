@@ -1,238 +1,366 @@
-gpu-job-management-api
+# gpu-job-management-api
+
+Production-style backend for authenticated asynchronous job execution.
+
+This project is a backend system for submitting, tracking, and managing background jobs through a clean API. It uses FastAPI for the application layer, Redis and Celery for asynchronous task execution, PostgreSQL for durable persistence, and Alembic for migration-based schema management. The full local stack runs with Docker Compose.
+
+## Overview
+
+The API is designed around a simple distributed workflow:
+
+Client -> FastAPI API -> Redis Broker -> Celery Worker -> PostgreSQL
 
 
+A user authenticates, submits a job, and receives an immediate API response while the actual work is processed asynchronously by a worker. Job state is stored in PostgreSQL so the system can track execution progress, results, and failures over time.
 
-Production-style backend for asynchronous GPU compute job management.
+## Why this project
 
+This project was built to demonstrate practical backend engineering patterns:
 
+- Authentication with JWT-based protected routes
+- Persistent job state and ownership rules
+- Queue/worker separation for asynchronous execution
+- Migration-driven database management with Alembic
+- Containerized local development with Docker Compose
+- Clear failure handling and safer delete behavior
 
-This project uses FastAPI for the API layer, Redis and Celery for asynchronous job processing, PostgreSQL for durable storage, and Alembic for database migrations. The application is containerized with Docker Compose for local development and service orchestration.
+## Features
 
+- User registration and login
+- JWT access tokens for protected endpoints
+- Submit background jobs
+- List only the current user's jobs
+- View a specific job by ID
+- Delete jobs only when safe to remove
+- Persist job results and error messages
+- Interactive API documentation through FastAPI
 
+## Job lifecycle
 
+Jobs move through these states:
 
+- `queued`
+- `running`
+- `succeeded`
+- `failed`
 
-Overview
+The current implementation includes two example job types:
 
+- `test_sleep` — simulates asynchronous work by sleeping for a number of seconds
+- `validate_payload` — validates required input and demonstrates a controlled failure path
 
+## Stack
 
-The platform is designed around a simple distributed workflow:
+- FastAPI
+- PostgreSQL
+- SQLAlchemy
+- Alembic
+- Redis
+- Celery
+- Docker Compose
 
+## Project structure
 
-
-Client -> FastAPI -> Redis -> Celery Worker -> PostgreSQL
-
-
-
-This architecture separates user-facing request handling from background processing and persistent storage, making the system easier to scale and maintain.
-
-
-
-
-
-Project structure
-
-
-
-├── alembic
-
-│   ├── env.py
-
-│   ├── \_\_pycache\_\_
-
-│   │   └── env.cpython-312.pyc
-
-│   ├── README
-
-│   ├── script.py.mako
-
-│   └── versions
-
-│       └── 90f9e28103f8\_initial\_schema.py
-
-├── alembic.ini
-
-├── app
-
-│   ├── core
-
-│   │   ├── config.py
-
-│   │   ├── db.py
-
-│   │   ├── deps.py
-
-│   │   ├── \_\_pycache\_\_
-
-│   │   └── security.py
-
-│   ├── main.py
-
-│   ├── models
-
-│   │   ├── \_\_init\_\_.py
-
-│   │   ├── job.py
-
-│   │   └── user.py
-
-│   ├── routes
-
-│   │   └── auth.py
-
-│   ├── schemas
-
-│   │   ├── auth.py
-
-│   │   └── job.py
-
-│   └── services
-
-│       ├── jobs.py
-
-│       └── password\_policy.py
-
-├── docker
-
-│   ├── api.Dockerfile
-
-│   └── worker.Dockerfile
-
+gpu-job-management-api/
+├── app/
+│   ├── core/
+│   ├── models/
+│   ├── routes/
+│   ├── schemas/
+│   └── services/
+├── worker/
+├── docker/
+├── alembic/
 ├── docker-compose.yml
-
-├── README.md
-
+├── alembic.ini
 ├── requirements.txt
+└── README.md
 
-└── worker
+## Local setup
 
-&nbsp;   ├── celery\_app.py
+### Prerequisites
 
-&nbsp;   └── tasks.py
+- Docker
+- Docker Compose
+- Git
 
+### 1. Clone the repository
 
+```bash
+git clone https://github.com/T1mmsquared/gpu-job-management-api.git
+cd gpu-job-management-api
+```
 
-Technology stack
+### 2. Rename the `.env.example` file
 
+Rename a `.env.example` file in the project root to `.env.` and add your application, database, and broker settings.
 
+Example:
 
--FastAPI
+```env
+POSTGRES_USER=gpu_jobs
+POSTGRES_PASSWORD=change_me
+POSTGRES_DB=gpu_jobs
+DATABASE_URL=postgresql+psycopg2://gpu_jobs:change_me@db:5432/gpu_jobs
+CELERY_BROKER_URL=redis://redis:6379/0
+CELERY_RESULT_BACKEND=redis://redis:6379/0
+JWT_SECRET_KEY=change_me
+JWT_ALGORITHM=HS256
+JWT_EXPIRE_MINUTES=60
+```
 
+### 3. Start the services
 
+```bash
+docker compose up -d --build
+```
 
--Celery
+### 4. Apply migrations
 
+```bash
+docker compose run --rm \
+  --user "$(id -u):$(id -g)" \
+  -v "$(pwd):/app" \
+  -w /app \
+  api alembic upgrade head
+```
 
+### 5. Confirm migration state
 
--Redis
+```bash
+docker compose run --rm \
+  --user "$(id -u):$(id -g)" \
+  -v "$(pwd):/app" \
+  -w /app \
+  api alembic current
 
+docker compose run --rm \
+  --user "$(id -u):$(id -g)" \
+  -v "$(pwd):/app" \
+  -w /app \
+  api alembic heads
+```
 
+### 6. Check running services
 
--PostgreSQL
+```bash
+docker compose ps
+```
 
+### 7. Open the API docs
 
+- Swagger UI: `http://localhost:8000/docs`
+- OpenAPI schema: `http://localhost:8000/openapi.json`
 
--SQLAlchemy
+## Run commands
 
+### Start the stack
 
+```bash
+docker compose up -d --build
+```
 
--Alembic
+### Stop the stack
 
+```bash
+docker compose down
+```
 
+### Stop and remove volumes
 
--Docker Compose
+```bash
+docker compose down -v
+```
 
+### Rebuild from scratch
 
-
-
-
-Setup
-
-
-
-Create a .env file in the project root with the required database, broker, and application settings
-
-
-
-Start the services:
-
-
-
+```bash
+docker compose down -v
 docker compose up -d --build
 
+docker compose run --rm \
+  --user "$(id -u):$(id -g)" \
+  -v "$(pwd):/app" \
+  -w /app \
+  api alembic upgrade head
+```
 
+### View API logs
 
-Apply database migrations:
+```bash
+docker compose logs -f api
+```
 
+### View worker logs
 
+```bash
+docker compose logs -f worker
+```
 
-docker compose run --rm
+## Alembic workflow
 
---user "$(id -u):$(id -g)"
+### Upgrade to head
 
--v "$(pwd):/app"
+```bash
+docker compose run --rm \
+  --user "$(id -u):$(id -g)" \
+  -v "$(pwd):/app" \
+  -w /app \
+  api alembic upgrade head
+```
 
--w /app
+### Check current revision
 
-api alembic upgrade head
+```bash
+docker compose run --rm \
+  --user "$(id -u):$(id -g)" \
+  -v "$(pwd):/app" \
+  -w /app \
+  api alembic current
+```
 
+### Check heads
 
+```bash
+docker compose run --rm \
+  --user "$(id -u):$(id -g)" \
+  -v "$(pwd):/app" \
+  -w /app \
+  api alembic heads
+```
 
+### Create a new migration
 
+Always upgrade first, then generate the next revision.
 
-Stop the services:
+```bash
+docker compose run --rm \
+  --user "$(id -u):$(id -g)" \
+  -v "$(pwd):/app" \
+  -w /app \
+  api alembic upgrade head
 
+docker compose run --rm \
+  --user "$(id -u):$(id -g)" \
+  -v "$(pwd):/app" \
+  -w /app \
+  api alembic revision --autogenerate -m "describe change"
+```
 
+## API examples
 
-docker compose down
+### Register
 
+```bash
+curl -s -X POST http://localhost:8000/auth/register \
+  -H 'Content-Type: application/json' \
+  -d '{"email":"you@example.com","password":"Strong#Pass123"}'
+echo
+```
 
+### Login and save token
 
+```bash
+TOKEN=$(curl -s -X POST http://localhost:8000/auth/login \
+  -H 'Content-Type: application/json' \
+  -d '{"email":"you@example.com","password":"Strong#Pass123"}' \
+  | python3 -c "import sys,json; print(json.load(sys.stdin)['access_token'])")
+echo "$TOKEN"
+```
 
+### Submit a job
 
-Development notes
+```bash
+curl -s -X POST http://localhost:8000/jobs \
+  -H "Authorization: Bearer $TOKEN" \
+  -H 'Content-Type: application/json' \
+  -d '{"job_type":"test_sleep","payload":{"seconds":2}}'
+echo
+```
 
+### List jobs
 
+```bash
+curl -s "http://localhost:8000/jobs?limit=10&offset=0" \
+  -H "Authorization: Bearer $TOKEN"
+echo
+```
 
-For database migration commands, run Alembic from the containerized environment so the application dependencies, configuration, and project files are resolved consistently.
+### Filter jobs by status
 
+```bash
+curl -s "http://localhost:8000/jobs?status=succeeded&limit=10&offset=0" \
+  -H "Authorization: Bearer $TOKEN"
+echo
+```
 
+### Get one job
 
+```bash
+curl -s http://localhost:8000/jobs/<JOB_ID> \
+  -H "Authorization: Bearer $TOKEN"
+echo
+```
 
+### Delete a job
 
-Future improvements
+```bash
+curl -i -X DELETE http://localhost:8000/jobs/<JOB_ID> \
+  -H "Authorization: Bearer $TOKEN"
+```
 
+## Example validation flow
 
+### Successful job
 
--job priority queues
+```bash
+curl -s -X POST http://localhost:8000/jobs \
+  -H "Authorization: Bearer $TOKEN" \
+  -H 'Content-Type: application/json' \
+  -d '{"job_type":"test_sleep","payload":{"seconds":2}}'
+```
 
+### Failure path
 
+```bash
+curl -s -X POST http://localhost:8000/jobs \
+  -H "Authorization: Bearer $TOKEN" \
+  -H 'Content-Type: application/json' \
+  -d '{"job_type":"validate_payload","payload":{}}'
+```
 
--monitoring and observability
+### Protected route check
 
+```bash
+curl -i http://localhost:8000/jobs
+```
 
+### Expected behavior
 
--admin tooling
+- Unauthenticated access to `/jobs` returns `401 Unauthorized`
+- Jobs created with `test_sleep` move to `succeeded`
+- Jobs created with invalid `validate_payload` input move to `failed`
+- A user cannot access another user's job
+- Running jobs return `409 Conflict` on delete attempts
+- Completed jobs can be deleted successfully
 
+## Development notes
 
+- After `docker compose down -v`, the database is empty and migrations must be applied again.
+- Alembic is the schema source of truth for this project.
+- The current implementation is focused on a clean backend slice rather than full production infrastructure.
 
--CI/CD
+## Future improvements
 
+- True cancellation support for running jobs
+- Retry policies and worker recovery handling
+- Job priority queues
+- Monitoring and observability
+- Admin tooling
+- CI/CD
+- Deployment hardening
+- GPU-specific scheduling improvements
 
+## Status
 
--cloud deployment
-
-
-
--GPU scheduling enhancements
-
-
-
-
-
-Status
-
-
-
-Actively in development.
-
+Actively in development. The core backend flow is implemented and validated locally, including authentication, ownership enforcement, asynchronous job execution, migration-based schema management, failure handling, and safe deletion behavior.
