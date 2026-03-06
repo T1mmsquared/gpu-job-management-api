@@ -9,7 +9,7 @@ celery_app = Celery(
 
 
 celery_app.conf.update(
-    celery_app.conf.task_track_started = True
+    task_track_started = True
     broker_connection_retry_on_startup=True,
 )
 
